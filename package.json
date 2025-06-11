@@ -10,6 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@deck.gl/core": "^9.1.12",
+    "@deck.gl/json": "^9.1.12",
+    "@deck.gl/layers": "^9.1.12",
+    "@deck.gl/react": "^9.1.12",
+    "@deck.gl/widgets": "^9.1.12",
     "@tailwindcss/vite": "^4.1.8",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
