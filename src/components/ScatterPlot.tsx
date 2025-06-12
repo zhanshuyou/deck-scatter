@@ -22,14 +22,14 @@ interface ScatterPlotProps {
   onPointClick?: (point: DataPoint) => void;
 }
 
-const ScatterPlot: React.FC<ScatterPlotProps> = ({
+export const ScatterPlot: React.FC<ScatterPlotProps> = ({
   data,
   width,
   height,
   viewState,
   onViewStateChange,
-  showGrid = true,
-  showAxes = true,
+  showGrid = false,
+  showAxes = false,
   onPointClick,
 }) => {
   const [hoverInfo, setHoverInfo] = useState<{
@@ -69,14 +69,14 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
           // X轴
           sourcePosition: [0, 0],
           targetPosition: [width, 0],
-          color: [0, 0, 0, 0],
+          color: [0, 0, 0, 255],
           width: 2,
         },
         {
           // Y轴
           sourcePosition: [0, 0],
           targetPosition: [0, height],
-          color: [0, 0, 0, 0],
+          color: [0, 0, 0, 255],
           width: 2,
         }
       );
@@ -103,7 +103,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
       opacity: 0.8,
       pickable: true,
       radiusMinPixels: 2,
-      radiusMaxPixels: 20,
+      radiusMaxPixels: 80,
       onClick: ({ object }) => onPointClick && object && onPointClick(object),
       onHover: ({ object, x, y }) =>
         setHoverInfo(object ? { point: object, x, y } : null),
@@ -113,6 +113,8 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
   const defaultViewState = {
     target: [width / 2, height / 2, 0],
     zoom: 1,
+    minZoom: -3,
+    maxZoom: 20,
   };
 
   return (
@@ -121,7 +123,7 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
         layers={layers}
         viewState={viewState || defaultViewState}
         onViewStateChange={onViewStateChange}
-        controller={true}
+        controller={{ inertia: true, scrollZoom: { speed: 0.01 } }}
         views={new OrthographicView({ width, height })}
         width={width}
         height={height}
@@ -158,5 +160,3 @@ const ScatterPlot: React.FC<ScatterPlotProps> = ({
     </div>
   );
 };
-
-export default ScatterPlot;
