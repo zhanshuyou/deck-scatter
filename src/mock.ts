@@ -1,4 +1,4 @@
-import { type DataPoint } from "./components/ScatterPlot";
+import type { DataPoint } from "./types/scatter";
 
 const COLORS = [
   [205, 0, 0, 200],
@@ -62,6 +62,7 @@ export function generateClusteredDatasets(params: {
       const y = centerY + offsetY;
 
       points.push({
+        id: `${i + 1}-${j + 1}`,
         position: [x, y],
         color: COLORS[i % COLORS.length] as [number, number, number, number],
         radius: 4,

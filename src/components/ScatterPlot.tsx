@@ -1,25 +1,35 @@
-import React, { useState } from "react";
+import React, { useMemo } from "react";
 import DeckGL from "@deck.gl/react";
-import { ScatterplotLayer } from "@deck.gl/layers";
-import { OrthographicView } from "@deck.gl/core";
+import { PolygonLayer, ScatterplotLayer } from "@deck.gl/layers";
+import {
+  OrthographicView,
+  type OrthographicViewState,
+  type LayersList,
+} from "@deck.gl/core";
 
-export interface DataPoint {
-  position: [number, number];
-  color: [number, number, number, number];
-  radius: number;
-  id?: string;
-  label?: string;
-}
+import type {
+  DataPoint,
+  Point,
+  PointHoverInfo,
+  ViewStateChangeHandler,
+} from "@/types/scatter";
+import { PointTooltip } from "@/components/PointTooltip";
 
 interface ScatterPlotProps {
   data: DataPoint[];
   width: number;
   height: number;
-  viewState?: any;
-  onViewStateChange?: (viewState: any) => void;
-  showGrid?: boolean;
-  showAxes?: boolean;
+  viewState?: OrthographicViewState;
+  hoverInfo?: PointHoverInfo;
+  disabledController?: boolean;
+  selectionPoints?: Point[];
+  onViewStateChange?: ViewStateChangeHandler;
   onPointClick?: (point: DataPoint) => void;
+  onPointHover?: (params: PointHoverInfo) => void;
+  onSelectionChange?: (selectPoints: DataPoint[]) => void;
+  onLassoMouseDown?: (event: React.MouseEvent) => void;
+  onLassoMouseMove?: (event: React.MouseEvent) => void;
+  onLassoMouseUp?: () => void;
 }
 
 export const ScatterPlot: React.FC<ScatterPlotProps> = ({
@@ -27,16 +37,18 @@ export const ScatterPlot: React.FC<ScatterPlotProps> = ({
   width,
   height,
   viewState,
+  hoverInfo,
+  disabledController,
+  selectionPoints = [],
   onViewStateChange,
   onPointClick,
+  onPointHover,
+  onLassoMouseDown,
+  onLassoMouseMove,
+  onLassoMouseUp,
 }) => {
-  const [hoverInfo, setHoverInfo] = useState<{
-    point: DataPoint;
-    x: number;
-    y: number;
-  } | null>(null);
 
-  const layers = [
+  const layers: LayersList = [
     new ScatterplotLayer<DataPoint>({
       id: "scatter-plot",
       data,
@@ -49,49 +61,57 @@ export const ScatterPlot: React.FC<ScatterPlotProps> = ({
       radiusMaxPixels: 20,
       onClick: ({ object }) => object && onPointClick?.(object),
       onHover: ({ object, x, y }) =>
-        setHoverInfo(object ? { point: object, x, y } : null),
+        onPointHover?.(object ? { point: object, x, y } : null),
     }),
   ];
+  if (selectionPoints.length > 0) {
+    const scale = viewState ? Math.pow(2, (viewState.zoom as number) ?? 0) : 1;
+    layers.push(
+      new PolygonLayer({
+        id: "selection-area",
+        data: [
+          {
+            polygon: selectionPoints,
+          },
+        ],
+        getPolygon: (d) => d.polygon,
+        getFillColor: [0, 0, 0, 20],
+        getLineColor: [0, 0, 0, 180],
+        getLineWidth: 1 / scale,
+        pickable: false,
+        stroked: true,
+        filled: true,
+        wireframe: false,
+      })
+    );
+  }
+
+  const controller = useMemo(() => {
+    return disabledController
+      ? false
+      : { inertia: true, scrollZoom: { speed: 0.01 } };
+  }, [disabledController]);
 
   return (
-    <div style={{ position: "relative", width, height }}>
+    <div
+      style={{ position: "relative", width, height }}
+      onMouseDown={onLassoMouseDown}
+      onMouseMove={onLassoMouseMove}
+      onMouseUp={onLassoMouseUp}
+      onMouseLeave={onLassoMouseUp}
+    >
       <DeckGL
         layers={layers}
         viewState={viewState}
         onViewStateChange={onViewStateChange}
-        controller={{ inertia: true, scrollZoom: { speed: 0.01 } }}
+        controller={controller}
         views={new OrthographicView({ width, height })}
         width={width}
         height={height}
       />
 
       {hoverInfo && (
-        <div
-          style={{
-            position: "absolute",
-            zIndex: 1,
-            pointerEvents: "none",
-            left: hoverInfo.x,
-            top: hoverInfo.y,
-            backgroundColor: "rgba(255, 255, 255, 0.9)",
-            padding: "8px",
-            borderRadius: "4px",
-            fontSize: "12px",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-            transform: "translate(-50%, -100%)",
-            border: "1px solid #ddd",
-            maxWidth: "200px",
-          }}
-        >
-          {hoverInfo.point.label && (
-            <div style={{ fontWeight: "bold", marginBottom: "4px" }}>
-              {hoverInfo.point.label}
-            </div>
-          )}
-          <div>X: {hoverInfo.point.position[0].toFixed(2)}</div>
-          <div>Y: {hoverInfo.point.position[1].toFixed(2)}</div>
-          {hoverInfo.point.id && <div>ID: {hoverInfo.point.id}</div>}
-        </div>
+        <PointTooltip point={hoverInfo.point} x={hoverInfo.x} y={hoverInfo.y} />
       )}
     </div>
   );
