@@ -14,7 +14,7 @@ export const useScatterPlot = (props: Props) => {
     target: [width / 2, height / 2, 0],
     zoom: -1,
     minZoom: -3,
-    maxZoom: 20,
+    maxZoom: 100,
   };
 
   const [viewState, setViewState] =

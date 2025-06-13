@@ -1,13 +1,22 @@
-import React, { useState, useMemo } from "react";
-import { ScatterPlot, type DataPoint } from "./components/ScatterPlot";
+import React, { useMemo } from "react";
+import { ScatterPlot } from "./components/ScatterPlot";
 import { useScatterPlot } from "./hooks/useScatterPlot";
-import { getPointsData } from "./mock";
+import { generateClusteredDatasets } from "./mock";
 
 const App: React.FC = () => {
-  // const [width, height] = [1000, 800];
   const { width, height } = document.body.getBoundingClientRect();
 
-  const data = useMemo(() => getPointsData(), []);
+  const datasets = useMemo(
+    () =>
+      generateClusteredDatasets({
+        canvasWidth: width,
+        canvasHeight: height,
+        datasetCount: 10,
+        pointsPerDataset: 20_000,
+        clusterRadius: 150,
+      }),
+    [width, height]
+  );
 
   const { viewState, onViewStateChange, onPointClick } = useScatterPlot({
     width,
@@ -15,16 +24,12 @@ const App: React.FC = () => {
   });
 
   return (
-    <div
-      style={{
-        width: `${width}px`,
-        height: `${height}px`,
-        border: "1px solid #ccc",
-        position: "relative",
-      }}
-    >
+    <div className="relative">
+      <p className="absolute top-4 left-4 bg-gray-300/50 px-2 rounded-md">
+        Dataset Count: {datasets.length.toLocaleString()}
+      </p>
       <ScatterPlot
-        data={data}
+        data={datasets}
         width={width}
         height={height}
         viewState={viewState}

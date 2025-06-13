@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import DeckGL from "@deck.gl/react";
-import { ScatterplotLayer, LineLayer } from "@deck.gl/layers";
+import { ScatterplotLayer } from "@deck.gl/layers";
 import { OrthographicView } from "@deck.gl/core";
 
 export interface DataPoint {
@@ -28,8 +28,6 @@ export const ScatterPlot: React.FC<ScatterPlotProps> = ({
   height,
   viewState,
   onViewStateChange,
-  showGrid = false,
-  showAxes = false,
   onPointClick,
 }) => {
   const [hoverInfo, setHoverInfo] = useState<{
@@ -38,62 +36,7 @@ export const ScatterPlot: React.FC<ScatterPlotProps> = ({
     y: number;
   } | null>(null);
 
-  // 生成网格和坐标轴
-  const gridLines = useMemo(() => {
-    const lines = [];
-    const gridSize = Math.max(width, height) / 10;
-
-    if (showGrid) {
-      // 水平网格线
-      for (let y = 0; y <= height; y += gridSize) {
-        lines.push({
-          sourcePosition: [0, y],
-          targetPosition: [width, y],
-          color: [200, 200, 200, 50],
-        });
-      }
-
-      // 垂直网格线
-      for (let x = 0; x <= width; x += gridSize) {
-        lines.push({
-          sourcePosition: [x, 0],
-          targetPosition: [x, height],
-          color: [200, 200, 200, 50],
-        });
-      }
-    }
-
-    if (showAxes) {
-      lines.push(
-        {
-          // X轴
-          sourcePosition: [0, 0],
-          targetPosition: [width, 0],
-          color: [0, 0, 0, 255],
-          width: 2,
-        },
-        {
-          // Y轴
-          sourcePosition: [0, 0],
-          targetPosition: [0, height],
-          color: [0, 0, 0, 255],
-          width: 2,
-        }
-      );
-    }
-
-    return lines;
-  }, [width, height, showGrid, showAxes]);
-
   const layers = [
-    new LineLayer({
-      id: "grid-lines",
-      data: gridLines,
-      getSourcePosition: (d: any) => d.sourcePosition,
-      getTargetPosition: (d: any) => d.targetPosition,
-      getColor: (d: any) => d.color,
-      getWidth: (d: any) => d.width || 1,
-    }),
     new ScatterplotLayer<DataPoint>({
       id: "scatter-plot",
       data,
@@ -102,26 +45,19 @@ export const ScatterPlot: React.FC<ScatterPlotProps> = ({
       getRadius: (d) => d.radius,
       opacity: 0.8,
       pickable: true,
-      radiusMinPixels: 2,
-      radiusMaxPixels: 80,
-      onClick: ({ object }) => onPointClick && object && onPointClick(object),
+      radiusMinPixels: 0.1,
+      radiusMaxPixels: 20,
+      onClick: ({ object }) => object && onPointClick?.(object),
       onHover: ({ object, x, y }) =>
         setHoverInfo(object ? { point: object, x, y } : null),
     }),
   ];
 
-  const defaultViewState = {
-    target: [width / 2, height / 2, 0],
-    zoom: 1,
-    minZoom: -3,
-    maxZoom: 20,
-  };
-
   return (
     <div style={{ position: "relative", width, height }}>
       <DeckGL
         layers={layers}
-        viewState={viewState || defaultViewState}
+        viewState={viewState}
         onViewStateChange={onViewStateChange}
         controller={{ inertia: true, scrollZoom: { speed: 0.01 } }}
         views={new OrthographicView({ width, height })}
