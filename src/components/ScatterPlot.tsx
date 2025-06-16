@@ -27,9 +27,6 @@ interface ScatterPlotProps {
   onPointClick?: (point: DataPoint) => void;
   onPointHover?: (params: PointHoverInfo) => void;
   onSelectionChange?: (selectPoints: DataPoint[]) => void;
-  onLassoMouseDown?: (event: React.MouseEvent) => void;
-  onLassoMouseMove?: (event: React.MouseEvent) => void;
-  onLassoMouseUp?: () => void;
 }
 
 export const ScatterPlot: React.FC<ScatterPlotProps> = ({
@@ -43,10 +40,27 @@ export const ScatterPlot: React.FC<ScatterPlotProps> = ({
   onViewStateChange,
   onPointClick,
   onPointHover,
-  onLassoMouseDown,
-  onLassoMouseMove,
-  onLassoMouseUp,
 }) => {
+  const getPolygonLayer = () => {
+    const scale = viewState ? Math.pow(2, (viewState.zoom as number) ?? 0) : 1;
+    return new PolygonLayer({
+      id: "selection-area",
+      data: [
+        {
+          polygon: selectionPoints,
+        },
+      ],
+      getPolygon: (d) => d.polygon,
+      getFillColor: [0, 0, 0, 20],
+      getLineColor: [0, 0, 0, 180],
+      getLineWidth: 1 / scale,
+      pickable: false,
+      stroked: true,
+      filled: true,
+      wireframe: false,
+      visible: selectionPoints.length > 0,
+    });
+  };
 
   const layers: LayersList = [
     new ScatterplotLayer<DataPoint>({
@@ -63,28 +77,8 @@ export const ScatterPlot: React.FC<ScatterPlotProps> = ({
       onHover: ({ object, x, y }) =>
         onPointHover?.(object ? { point: object, x, y } : null),
     }),
+    getPolygonLayer(),
   ];
-  if (selectionPoints.length > 0) {
-    const scale = viewState ? Math.pow(2, (viewState.zoom as number) ?? 0) : 1;
-    layers.push(
-      new PolygonLayer({
-        id: "selection-area",
-        data: [
-          {
-            polygon: selectionPoints,
-          },
-        ],
-        getPolygon: (d) => d.polygon,
-        getFillColor: [0, 0, 0, 20],
-        getLineColor: [0, 0, 0, 180],
-        getLineWidth: 1 / scale,
-        pickable: false,
-        stroked: true,
-        filled: true,
-        wireframe: false,
-      })
-    );
-  }
 
   const controller = useMemo(() => {
     return disabledController
@@ -93,13 +87,7 @@ export const ScatterPlot: React.FC<ScatterPlotProps> = ({
   }, [disabledController]);
 
   return (
-    <div
-      style={{ position: "relative", width, height }}
-      onMouseDown={onLassoMouseDown}
-      onMouseMove={onLassoMouseMove}
-      onMouseUp={onLassoMouseUp}
-      onMouseLeave={onLassoMouseUp}
-    >
+    <>
       <DeckGL
         layers={layers}
         viewState={viewState}
@@ -110,9 +98,7 @@ export const ScatterPlot: React.FC<ScatterPlotProps> = ({
         height={height}
       />
 
-      {hoverInfo && (
-        <PointTooltip point={hoverInfo.point} x={hoverInfo.x} y={hoverInfo.y} />
-      )}
-    </div>
+      <PointTooltip data={hoverInfo} />
+    </>
   );
 };

@@ -1,11 +1,15 @@
 import React, { useMemo, useState } from "react";
-import { IconLasso, IconLassoOff } from "@tabler/icons-react";
 
 import { generateClusteredDatasets } from "@/mock";
 import { ScatterPlot } from "@/components/ScatterPlot";
+import { ScatterContainer } from "@/components/ScatterContainer";
+import { Toolbar } from "@/components/Toolbar";
 import { useScatterPlot } from "@/hooks/useScatterPlot";
 import { useScatterLasso } from "@/hooks/useScatterLasso";
 import type { DataPoint } from "@/types/scatter";
+
+const DATASET_POINT_COUNT = 25_000;
+const DATASET_COUNT = 10;
 
 const App: React.FC = () => {
   const { width, height } = document.body.getBoundingClientRect();
@@ -22,8 +26,8 @@ const App: React.FC = () => {
     return generateClusteredDatasets({
       canvasWidth: width,
       canvasHeight: height,
-      datasetCount: 10,
-      pointsPerDataset: 25_000,
+      datasetCount: DATASET_COUNT,
+      pointsPerDataset: DATASET_POINT_COUNT,
       clusterRadius: 150,
     });
   }, []);
@@ -83,31 +87,20 @@ const App: React.FC = () => {
   });
 
   return (
-    <div className="relative">
-      <div className="absolute z-10 top-4 left-4 bg-gray-300/50 px-2 py-1 rounded-md">
-        Dataset Count: {datasets.length.toLocaleString()}
-        <div className="flex items-center gap-2">
-          <span
-            title="Lasso"
-            className="inline-flex items-center justify-center p-[2px] hover:cursor-pointer hover:bg-gray-300 transition-all duration-300 rounded-md"
-            onClick={() => setIsLassoing(!isLassoing)}
-          >
-            <IconLasso className={`${isLassoing ? "text-blue-400" : ""}`} />
-          </span>
-          <span
-            title="Lasso"
-            className="inline-flex items-center justify-center p-[2px] hover:cursor-pointer hover:bg-gray-300 transition-all duration-300 rounded-md"
-            onClick={() => setSelectedPoints([])}
-          >
-            <IconLassoOff />
-          </span>
-        </div>
-        <div>
-          <span className="flex items-center gap-[20px]">
-            Selected Points: {selectedPoints.length.toLocaleString()}{" "}
-          </span>
-        </div>
-      </div>
+    <ScatterContainer
+      width={width}
+      height={height}
+      onLassoMouseDown={onLassoMouseDown}
+      onLassoMouseMove={onLassoMouseMove}
+      onLassoMouseUp={onLassoMouseUp}
+    >
+      <Toolbar
+        count={datasets.length}
+        isLassoing={isLassoing}
+        selectedPoints={selectedPoints}
+        onLassoClick={() => setIsLassoing(!isLassoing)}
+        onLassoOffClick={() => setSelectedPoints([])}
+      />
 
       <ScatterPlot
         data={datasets}
@@ -120,11 +113,8 @@ const App: React.FC = () => {
         onViewStateChange={onViewStateChange}
         onPointClick={onPointClick}
         onPointHover={onPointHover}
-        onLassoMouseDown={onLassoMouseDown}
-        onLassoMouseMove={onLassoMouseMove}
-        onLassoMouseUp={onLassoMouseUp}
       />
-    </div>
+    </ScatterContainer>
   );
 };
 

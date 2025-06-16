@@ -1,13 +1,18 @@
 import React from "react";
-import type { DataPoint } from "@/types/scatter";
+import type { DataPoint, PointHoverInfo } from "@/types/scatter";
 
 interface Props {
-  point: DataPoint;
-  x: number;
-  y: number;
+  data?: PointHoverInfo;
 }
 
-export const PointTooltip: React.FC<Props> = ({ point, x, y }) => {
+export const PointTooltip: React.FC<Props> = (props) => {
+  const { data } = props;
+  const { point, x, y } = data ?? { point: {} as DataPoint };
+
+  if (!data) {
+    return null;
+  }
+
   return (
     <div
       style={{
